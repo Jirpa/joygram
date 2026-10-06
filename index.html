@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-rose-50/50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Joygram - Romantic Photo Card & Mini Slide-Story</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        rose: {
+                            50: '#fff1f2',
+                            100: '#ffe4e6',
+                            200: '#fecdd3',
+                            300: '#fda4af',
+                            400: '#fb7185',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                            700: '#be123c',
+                            800: '#9f1239',
+                            900: '#881337',
+                        },
+                        blush: '#fdf2f4',
+                        rosegold: '#b76e79',
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        cursive: ['Dancing Script', 'cursive'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    animation: {
+                        'float-slow': 'float 6s ease-in-out infinite',
+                        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+                        'bloom': 'bloom 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+                            '50%': { transform: 'translateY(-15px) rotate(3deg)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { boxShadow: '0 0 15px rgba(244, 63, 94, 0.3)' },
+                            '50%': { boxShadow: '0 0 30px rgba(244, 63, 94, 0.6)' },
+                        },
+                        bloom: {
+                            '0%': { transform: 'scale(0) rotate(-45deg)', opacity: '0' },
+                            '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 228, 230, 0.8);
+        }
+        
+        .glass-card-dark {
+            background: rgba(30, 10, 18, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+        }
+
+        /* Envelope Styles */
+        .envelope-wrapper {
+            perspective: 1000px;
+        }
+        
+        .envelope-flap {
+            transform-origin: top;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .envelope-open .envelope-flap {
+            transform: rotateX(180deg);
+        }
+
+        /* Particle Canvas */
+        #particleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 40;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #fff1f2;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #fda4af;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #f43f5e;
+        }
+
+        /* Hide scrollbar for photo tray horizontal scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="h-full font-sans text-gray-800 antialiased selection:bg-rose-200 selection:text-rose-900">
+
+    <!-- Heart Particle Canvas Layer -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- App Main Container -->
+    <div id="appContainer" class="min-h-full flex flex-col justify-between relative overflow-x-hidden">
+
+        <!-- Top Navigation Header -->
+        <header class="w-full z-30 pt-4 px-4 sm:px-8 max-w-5xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-rose-500 to-pink-400 flex items-center justify-center text-white shadow-md shadow-rose-200 animate-pulse-glow">
+                    <i class="fa-solid font-bold fa-heart text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-cursive text-3xl font-bold bg-gradient-to-r from-rose-600 via-pink-600 to-rose-400 bg-clip-text text-transparent">
+                        Joygram
+                    </h1>
+                    <p class="text-[10px] uppercase tracking-widest text-rose-400 font-semibold -mt-1">Love Story Card</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <!-- Music Toggle Button -->
+                <button id="musicToggleBtn" onclick="toggleAudio()" class="p-2.5 rounded-full bg-white text-rose-500 hover:bg-rose-50 shadow-sm border border-rose-100 transition-all duration-300 flex items-center gap-2 px-3 text-xs font-medium">
+                    <i id="musicIcon" class="fa-solid fa-music text-rose-500"></i>
+                    <span id="musicText" class="hidden sm:inline">Melody Off</span>
+                </button>
+                <!-- Quick Demo Fill -->
+                <button onclick="loadSampleData()" class="px-3 py-2 text-xs font-semibold rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200 transition">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Quick Demo
+                </button>
+                <!-- Reset Data Button -->
+                <button onclick="clearSavedData()" class="p-2.5 rounded-full bg-white text-gray-400 hover:text-rose-600 hover:bg-rose-50 shadow-sm border border-rose-100 transition" title="Clear/Reset Saved Joygram">
+                    <i class="fa-solid fa-rotate-left text-xs"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- CREATOR CREATION STEPPER FORM (Default View) -->
+        <main id="creatorSection" class="w-full max-w-3xl mx-auto px-4 py-6 flex-grow">
+            
+            <!-- Persistence Status Badge -->
+            <div id="saveStatusIndicator" class="flex items-center justify-center gap-2 mb-4 text-xs font-medium text-rose-600 bg-rose-100/70 py-1.5 px-4 rounded-full max-w-fit mx-auto transition-all">
+                <i class="fa-solid fa-cloud-arrow-up text-rose-500 animate-pulse"></i>
+                <span id="saveStatusText">Auto-saving locally to browser memory...</span>
+            </div>
+
+            <!-- Hero Introduction -->
+            <div class="text-center mb-6">
+                <span class="inline-block px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-semibold tracking-wide uppercase mb-2">
+                    <i class="fa-regular fa-clock mr-1"></i> 1-3 Minute Setup
+                </span>
+                <h2 class="text-2xl sm:text-4xl font-serif font-semibold text-gray-900 mb-2">
+                    Craft a Loving Digital Story
+                </h2>
+                <p class="text-sm sm:text-base text-gray-600 max-w-lg mx-auto">
+                    Upload your cherished memories, write a heartfelt message, and surprise her. Your progress is continuously saved!
+                </p>
+            </div>
+
+            <!-- Main Interactive Form Card -->
+            <div class="glass-card rounded-3xl p-5 sm:p-8 shadow-xl shadow-rose-100/60 mb-10 space-y-8">
+                
+                <!-- STEP 1: Basic Information -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 border-b border-rose-100 pb-2">
+                        <span class="w-6 h-6 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center">1</span>
+                        <h3 class="font-serif text-lg font-semibold text-gray-800">The Lovers' Names</h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Her Name (Your Girlfriend) <span class="text-rose-500">*</span></label>
+                            <div class="relative">
+                                <i class="fa-solid fa-heart-pulse absolute left-3.5 top-3.5 text-rose-300 text-sm"></i>
+                                <input type="text" id="herNameInput" oninput="triggerAutoSave()" placeholder="e.g. Sophia" class="w-full pl-10 pr-4 py-2.5 bg-white/80 border border-rose-200 rounded-2xl focus:ring-2 focus:ring-rose-400 focus:outline-none text-sm transition">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Your Name <span class="text-rose-500">*</span></label>
+                            <div class="relative">
+                                <i class="fa-solid fa-user-heart absolute left-3.5 top-3.5 text-rose-300 text-sm"></i>
+                                <input type="text" id="senderNameInput" oninput="triggerAutoSave()" placeholder="e.g. Alex" class="w-full pl-10 pr-4 py-2.5 bg-white/80 border border-rose-200 rounded-2xl focus:ring-2 focus:ring-rose-400 focus:outline-none text-sm transition">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Photo Uploads (Max 10) -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-rose-100 pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center">2</span>
+                            <h3 class="font-serif text-lg font-semibold text-gray-800">Your Photo Story</h3>
+                        </div>
+                        <span id="photoCountBadge" class="text-xs font-semibold bg-rose-100 text-rose-700 px-2.5 py-1 rounded-full">
+                            0 / 10 Photos
+                        </span>
+                    </div>
+
+                    <!-- Dropzone -->
+                    <div id="dropzone" onclick="document.getElementById('photoFileInput').click()" class="border-2 border-dashed border-rose-300 hover:border-rose-500 bg-rose-50/40 hover:bg-rose-50 transition cursor-pointer rounded-2xl p-6 text-center group">
+                        <input type="file" id="photoFileInput" multiple accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                        <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
+                        </div>
+                        <p class="text-sm font-semibold text-gray-700">Click to upload photos or drag & drop</p>
+                        <p class="text-xs text-gray-500 mt-1">Upload up to 10 favorite photos (JPEG, PNG, WebP)</p>
+                    </div>
+
+                    <!-- Photo Thumbnails & Captions Tray -->
+                    <div id="photoTray" class="grid grid-cols-1 sm:grid-cols-2 gap-3 min-h-[100px] mt-4">
+                        <!-- Empty Placeholder -->
+                        <div id="emptyTrayMsg" class="col-span-full text-center py-6 text-gray-400 text-xs italic bg-white/40 rounded-2xl border border-dashed border-gray-200">
+                            No photos added yet. Upload photos to start building your romantic slide-story.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Main Love Letter / Note -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 border-b border-rose-100 pb-2">
+                        <span class="w-6 h-6 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center">3</span>
+                        <h3 class="font-serif text-lg font-semibold text-gray-800">Your Love Letter / Opening Note</h3>
+                    </div>
+
+                    <div>
+                        <textarea id="loveLetterInput" oninput="triggerAutoSave()" rows="4" placeholder="Write a sweet message that reveals when she opens the digital card envelope..." class="w-full p-4 bg-white/80 border border-rose-200 rounded-2xl focus:ring-2 focus:ring-rose-400 focus:outline-none text-sm transition leading-relaxed resize-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- STEP 4: Ambient Audio Theme Selection -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 border-b border-rose-100 pb-2">
+                        <span class="w-6 h-6 rounded-full bg-rose-500 text-white text-xs font-bold flex items-center justify-center">4</span>
+                        <h3 class="font-serif text-lg font-semibold text-gray-800">Background Mood Melody</h3>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <button type="button" onclick="selectMusicTrack('romantic_piano')" id="track_romantic_piano" class="music-card border-2 border-rose-500 bg-rose-50 p-3 rounded-2xl text-center cursor-pointer transition">
+                            <i class="fa-solid fa-music text-rose-500 text-lg mb-1 block"></i>
+                            <span class="block text-xs font-semibold text-gray-800">Soft Piano</span>
+                        </button>
+                        <button type="button" onclick="selectMusicTrack('celestial_lullaby')" id="track_celestial_lullaby" class="music-card border-2 border-transparent bg-white/60 hover:bg-rose-50/50 p-3 rounded-2xl text-center cursor-pointer transition">
+                            <i class="fa-solid fa-sparkles text-rose-400 text-lg mb-1 block"></i>
+                            <span class="block text-xs font-semibold text-gray-800">Dreamy Synth</span>
+                        </button>
+                        <button type="button" onclick="selectMusicTrack('acoustic_breeze')" id="track_acoustic_breeze" class="music-card border-2 border-transparent bg-white/60 hover:bg-rose-50/50 p-3 rounded-2xl text-center cursor-pointer transition">
+                            <i class="fa-solid fa-heart text-rose-400 text-lg mb-1 block"></i>
+                            <span class="block text-xs font-semibold text-gray-800">Acoustic Warmth</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Buttons: Preview & Copy Link -->
+                <div class="pt-4 flex flex-col sm:flex-row gap-3">
+                    <button onclick="manualSaveDraft()" class="py-3 px-4 bg-rose-100 hover:bg-rose-200 text-rose-700 font-semibold rounded-2xl transition duration-300 flex items-center justify-center gap-2 text-xs sm:text-sm">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span>Save Draft</span>
+                    </button>
+                    <button onclick="launchJoygramPreview()" class="flex-1 py-4 px-6 bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-600 text-white font-semibold rounded-2xl shadow-lg shadow-rose-200 hover:shadow-rose-300 transition duration-300 flex items-center justify-center gap-2 group">
+                        <i class="fa-solid fa-play group-hover:scale-125 transition duration-300"></i>
+                        <span>Preview & Open Joygram</span>
+                    </button>
+                    <button id="shareBtn" onclick="shareOrCopyJoygram()" class="py-4 px-6 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 font-semibold rounded-2xl transition duration-300 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-share-nodes"></i>
+                        <span>Share Story Link</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- PRESENTATION REVEAL STEP (Hidden by Default) -->
+        <section id="revealSection" class="hidden fixed inset-0 z-50 bg-rose-950/90 backdrop-blur-xl flex items-center justify-center p-4">
+            
+            <!-- Close / Back Button -->
+            <button onclick="exitPresentationMode()" class="absolute top-5 right-5 z-50 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <!-- Envelope Opening Container -->
+            <div id="envelopeContainer" class="w-full max-w-sm sm:max-w-md mx-auto text-center relative z-10 transition-all duration-700">
+                
+                <!-- Flower Bloom & Heart Animation Stage -->
+                <div class="mb-6 relative flex justify-center items-center">
+                    <div id="bloomFlower" class="w-24 h-24 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-300 text-5xl animate-bloom">
+                        <i class="fa-solid fa-spa"></i>
+                    </div>
+                </div>
+
+                <h3 class="text-rose-200 font-serif text-xl sm:text-2xl mb-1">A Special Surprise For</h3>
+                <h2 id="revealRecipientTitle" class="font-cursive text-4xl sm:text-5xl font-bold text-white mb-6"></h2>
+
+                <!-- Interactive Envelope Graphic -->
+                <div id="interactiveEnvelope" onclick="openEnvelopeCard()" class="envelope-wrapper relative bg-gradient-to-br from-rose-600 to-pink-700 rounded-2xl shadow-2xl p-8 cursor-pointer hover:scale-105 transition-transform duration-300 border border-rose-400/30 group">
+                    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/20 to-transparent rounded-2xl pointer-events-none"></div>
+                    
+                    <div class="py-10 flex flex-col items-center justify-center text-white space-y-3">
+                        <div class="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition duration-300">
+                            <i class="fa-solid fa-envelope-open-text text-3xl text-rose-100"></i>
+                        </div>
+                        <p class="font-semibold text-lg tracking-wide">Tap to Open Card</p>
+                        <p id="senderTagline" class="text-xs text-rose-200 font-light"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLIDE STORY MODAL / FULLVIEW (Appears after envelope opened) -->
+            <div id="slideStoryView" class="hidden fixed inset-0 z-50 bg-black/95 flex flex-col justify-between p-4 sm:p-8 select-none">
+                
+                <!-- Header Control Bar -->
+                <div class="w-full max-w-4xl mx-auto flex items-center justify-between z-20 text-white/80">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-heart text-rose-500"></i>
+                        <span id="slideStoryTitle" class="font-cursive text-xl font-bold text-white"></span>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <span id="slideCounter" class="text-xs font-semibold bg-white/10 px-3 py-1 rounded-full text-white/90">
+                            1 / 1
+                        </span>
+                        <button onclick="exitPresentationMode()" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur transition">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Slide Content Area (Image + Caption) -->
+                <div class="relative flex-1 max-w-4xl w-full mx-auto my-4 flex flex-col items-center justify-center overflow-hidden" id="touchContainer">
+                    
+                    <!-- Letter Overlay Slide (First Slide) -->
+                    <div id="letterSlide" class="w-full max-w-lg glass-card rounded-3xl p-6 sm:p-10 text-center shadow-2xl text-gray-800 space-y-6 transform transition duration-500">
+                        <i class="fa-solid fa-quote-left text-3xl text-rose-400 block mx-auto"></i>
+                        <p id="displayLoveLetter" class="font-serif italic text-base sm:text-lg leading-relaxed text-gray-800 max-h-[60vh] overflow-y-auto pr-2"></p>
+                        <div class="border-t border-rose-100 pt-4 flex items-center justify-between text-xs text-gray-500">
+                            <span id="displaySenderName" class="font-bold text-rose-600"></span>
+                            <span>Swipe or click arrow <i class="fa-solid fa-arrow-right ml-1"></i></span>
+                        </div>
+                    </div>
+
+                    <!-- Photo Slideshow View -->
+                    <div id="photoSlide" class="hidden w-full h-full flex flex-col items-center justify-center relative">
+                        <div class="relative max-h-[70vh] max-w-full rounded-2xl overflow-hidden shadow-2xl border border-white/10 flex items-center justify-center bg-black/40">
+                            <img id="currentSlideImage" src="" alt="Joygram Photo" class="max-h-[70vh] max-w-full object-contain transition-all duration-500">
+                        </div>
+                        
+                        <!-- Caption Overlay Banner -->
+                        <div id="slideCaptionContainer" class="mt-4 max-w-xl text-center px-4">
+                            <p id="currentSlideCaption" class="text-white/90 font-serif italic text-sm sm:text-base leading-snug bg-white/10 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 inline-block"></p>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Arrows -->
+                    <button onclick="prevSlide()" class="absolute left-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur transition z-30">
+                        <i class="fa-solid fa-chevron-left text-lg"></i>
+                    </button>
+                    <button onclick="nextSlide()" class="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur transition z-30">
+                        <i class="fa-solid fa-chevron-right text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Footer Indicators -->
+                <div class="w-full max-w-xl mx-auto flex items-center justify-center gap-2 py-2" id="dotsContainer">
+                    <!-- Dynamic Dots generated in JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Notification Toast Box -->
+        <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden bg-gray-900/90 text-white px-5 py-3 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2 backdrop-blur transition-all duration-300">
+            <i class="fa-solid fa-circle-check text-rose-400 text-sm"></i>
+            <span id="toastMsg">Message</span>
+        </div>
+
+        <!-- Footer -->
+        <footer class="w-full py-4 text-center text-xs text-rose-400 font-medium">
+            Made with <i class="fa-solid fa-heart text-rose-500 mx-1"></i> for your favorite person &bull; Joygram Card Maker
+        </footer>
+    </div>
+
+    <!-- Firebase SDK Modules for Cloud Persistence & Multi-Device Sharing -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'joygram-app';
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+
+        async function initCloudStorage() {
+            try {
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+                if (!firebaseConfig) return;
+
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (initialToken) {
+                    const userCred = await signInWithCustomToken(auth, initialToken);
+                    currentUser = userCred.user;
+                } else {
+                    const userCred = await signInAnonymously(auth);
+                    currentUser = userCred.user;
+                }
+            } catch (err) {
+                console.warn("Cloud authentication notice:", err);
+            }
+        }
+
+        window.initCloudStorage = initCloudStorage;
+        window.dbRef = () => db;
+        window.currentUserRef = () => currentUser;
+        window.getDocFn = getDoc;
+        window.setDocFn = setDoc;
+        window.docFn = doc;
+        window.appIdVal = appId;
+    </script>
+
+    <script>
+        // Core State
+        let photos = []; // Array of { id, url, caption }
+        let currentSlideIndex = 0; // 0 is Love Letter slide, 1..N are photos
+        let selectedTrack = 'romantic_piano';
+        let audioContext = null;
+        let isAudioPlaying = false;
+        let audioInterval = null;
+        let autoSaveTimer = null;
+
+        // IndexedDB Configuration for Storing High-Resolution Photos Persistently locally
+        const DB_NAME = 'JoygramPersistDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'joygram_store';
+
+        function openDatabase() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveToDB(key, data) {
+            try {
+                const db = await openDatabase();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.put(data, key);
+                    req.onsuccess = () => resolve(true);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (err) {
+                console.error("IndexedDB Save Error:", err);
+            }
+        }
+
+        async function loadFromDB(key) {
+            try {
+                const db = await openDatabase();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.get(key);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (err) {
+                console.error("IndexedDB Load Error:", err);
+                return null;
+            }
+        }
+
+        async function clearDB() {
+            try {
+                const db = await openDatabase();
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.clear();
+                    req.onsuccess = () => resolve(true);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (err) {
+                console.error("IndexedDB Clear Error:", err);
+            }
+        }
+
+        // Image compression helper to optimize photos for fast cloud delivery
+        function compressPhotoFile(file) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        const MAX_HEIGHT = 800;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height = Math.round((height * MAX_WIDTH) / width);
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width = Math.round((width * MAX_HEIGHT) / height);
+                                height = MAX_HEIGHT;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Compress to efficient JPEG data URL
+                        const compressedUrl = canvas.toDataURL('image/jpeg', 0.72);
+                        resolve(compressedUrl);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Heart Floating Particles Logic
+        let particles = [];
+        function animateParticles() {
+            const canvas = document.getElementById('particleCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            particles = Array.from({ length: 25 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 12 + 8,
+                speedY: Math.random() * 0.8 + 0.3,
+                speedX: Math.sin(Math.random() * Math.PI) * 0.4,
+                opacity: Math.random() * 0.5 + 0.2,
+                pulse: Math.random() * 0.02
+            }));
+
+            function drawHeart(x, y, size, opacity) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.translate(x, y);
+                ctx.fillStyle = `rgba(244, 63, 94, ${opacity})`;
+                const topCurveHeight = size * 0.3;
+                ctx.moveTo(0, topCurveHeight);
+                ctx.bezierCurveTo(0, 0, -size / 2, 0, -size / 2, topCurveHeight);
+                ctx.bezierCurveTo(-size / 2, (size + topCurveHeight) / 2, 0, size, 0, size);
+                ctx.bezierCurveTo(0, size, size / 2, (size + topCurveHeight) / 2, size / 2, topCurveHeight);
+                ctx.bezierCurveTo(size / 2, 0, 0, 0, 0, topCurveHeight);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+
+            function frame() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.y -= p.speedY;
+                    p.x += Math.sin(p.y * 0.01) * 0.5;
+                    p.opacity += p.pulse;
+                    if (p.opacity > 0.6 || p.opacity < 0.2) p.pulse = -p.pulse;
+
+                    if (p.y < -20) {
+                        p.y = canvas.height + 20;
+                        p.x = Math.random() * canvas.width;
+                    }
+                    drawHeart(p.x, p.y, p.size, p.opacity);
+                });
+                requestAnimationFrame(frame);
+            }
+            frame();
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            if (!toast || !toastMsg) return;
+            toastMsg.innerText = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3500);
+        }
+
+        function triggerAutoSave() {
+            updateSaveStatusIndicator("Saving changes...", "fa-arrows-rotate animate-spin");
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = setTimeout(async () => {
+                await saveJoygramData();
+                updateSaveStatusIndicator("All changes saved locally", "fa-circle-check");
+            }, 600);
+        }
+
+        function updateSaveStatusIndicator(msg, iconClass) {
+            const statusText = document.getElementById('saveStatusText');
+            const statusIcon = document.querySelector('#saveStatusIndicator i');
+            if (statusText) statusText.innerText = msg;
+            if (statusIcon) statusIcon.className = `fa-solid ${iconClass} text-rose-500`;
+        }
+
+        async function saveJoygramData() {
+            const formData = {
+                herName: document.getElementById('herNameInput').value,
+                senderName: document.getElementById('senderNameInput').value,
+                loveLetter: document.getElementById('loveLetterInput').value,
+                selectedTrack: selectedTrack,
+                timestamp: Date.now()
+            };
+
+            localStorage.setItem('joygram_form_data', JSON.stringify(formData));
+            await saveToDB('joygram_photos', photos);
+        }
+
+        async function loadSavedJoygramData() {
+            // Check for cloud ID in URL hash (#card=ID)
+            if (window.location.hash.startsWith('#card=')) {
+                const cardId = window.location.hash.replace('#card=', '').trim();
+                if (cardId) {
+                    showToast("Fetching romantic card...");
+                    
+                    if (window.initCloudStorage && !window.currentUserRef()) {
+                        await window.initCloudStorage();
+                    }
+
+                    const db = window.dbRef();
+                    const getDocFn = window.getDocFn;
+                    const docFn = window.docFn;
+                    const appId = window.appIdVal;
+
+                    if (db && getDocFn) {
+                        try {
+                            const cardRef = docFn(db, 'artifacts', appId, 'public', 'data', 'joygrams', cardId);
+                            const snap = await getDocFn(cardRef);
+                            if (snap.exists()) {
+                                const data = snap.data();
+                                document.getElementById('herNameInput').value = data.herName || '';
+                                document.getElementById('senderNameInput').value = data.senderName || '';
+                                document.getElementById('loveLetterInput').value = data.loveLetter || '';
+                                if (data.selectedTrack) selectMusicTrack(data.selectedTrack);
+                                if (data.photos && Array.isArray(data.photos)) {
+                                    photos = data.photos;
+                                    renderPhotoTray();
+                                }
+                                showToast("Loaded shared Joygram! Opening surprise...");
+                                setTimeout(() => {
+                                    launchJoygramPreview();
+                                }, 600);
+                                return;
+                            }
+                        } catch (e) {
+                            console.error("Error loading cloud card:", e);
+                        }
+                    }
+                }
+            }
+
+            // Fallback: Read from legacy base64 URL hash if provided
+            if (window.location.hash.startsWith('#joygram-data=')) {
+                try {
+                    const encodedData = window.location.hash.replace('#joygram-data=', '');
+                    const decoded = JSON.parse(decodeURIComponent(escape(atob(encodedData))));
+                    if (decoded) {
+                        document.getElementById('herNameInput').value = decoded.herName || '';
+                        document.getElementById('senderNameInput').value = decoded.senderName || '';
+                        document.getElementById('loveLetterInput').value = decoded.loveLetter || '';
+                        if (decoded.selectedTrack) selectMusicTrack(decoded.selectedTrack);
+                        if (decoded.photos && Array.isArray(decoded.photos)) {
+                            photos = decoded.photos;
+                            renderPhotoTray();
+                        }
+                        showToast("Loaded shared Joygram card!");
+                        return;
+                    }
+                } catch(e) {
+                    console.warn("Could not parse shared URL data:", e);
+                }
+            }
+
+            // Otherwise, load persistent data from local storage
+            const localForm = localStorage.getItem('joygram_form_data');
+            if (localForm) {
+                const parsed = JSON.parse(localForm);
+                document.getElementById('herNameInput').value = parsed.herName || '';
+                document.getElementById('senderNameInput').value = parsed.senderName || '';
+                document.getElementById('loveLetterInput').value = parsed.loveLetter || '';
+                if (parsed.selectedTrack) selectMusicTrack(parsed.selectedTrack);
+            }
+
+            const savedPhotos = await loadFromDB('joygram_photos');
+            if (savedPhotos && Array.isArray(savedPhotos)) {
+                photos = savedPhotos;
+                renderPhotoTray();
+            }
+
+            updateSaveStatusIndicator("Saved locally", "fa-circle-check");
+        }
+
+        async function manualSaveDraft() {
+            await saveJoygramData();
+            showToast("Draft saved successfully to browser storage!");
+        }
+
+        async function clearSavedData() {
+            localStorage.removeItem('joygram_form_data');
+            await clearDB();
+            photos = [];
+            document.getElementById('herNameInput').value = '';
+            document.getElementById('senderNameInput').value = '';
+            document.getElementById('loveLetterInput').value = '';
+            renderPhotoTray();
+            selectMusicTrack('romantic_piano');
+            updateSaveStatusIndicator("Cleared local storage", "fa-trash-can");
+            showToast("Saved data cleared!");
+        }
+
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            if (!files.length) return;
+
+            const remainingSlots = 10 - photos.length;
+            if (remainingSlots <= 0) {
+                showToast("Maximum 10 photos allowed!");
+                return;
+            }
+
+            const filesToProcess = files.slice(0, remainingSlots);
+
+            filesToProcess.forEach(async (file) => {
+                const compressedUrl = await compressPhotoFile(file);
+                photos.push({
+                    id: 'photo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                    url: compressedUrl,
+                    caption: ''
+                });
+                renderPhotoTray();
+                triggerAutoSave();
+            });
+        }
+
+        function renderPhotoTray() {
+            const tray = document.getElementById('photoTray');
+            const badge = document.getElementById('photoCountBadge');
+            if (badge) badge.innerText = `${photos.length} / 10 Photos`;
+
+            if (!tray) return;
+
+            if (photos.length === 0) {
+                tray.innerHTML = `
+                    <div id="emptyTrayMsg" class="col-span-full text-center py-6 text-gray-400 text-xs italic bg-white/40 rounded-2xl border border-dashed border-gray-200">
+                        No photos added yet. Upload photos to start building your romantic slide-story.
+                    </div>
+                `;
+                return;
+            }
+
+            tray.innerHTML = '';
+            photos.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-white/90 p-3 rounded-2xl border border-rose-100 flex items-center gap-3 shadow-sm hover:shadow-md transition";
+                card.innerHTML = `
+                    <img src="${item.url}" class="w-14 h-14 object-cover rounded-xl border border-rose-200 flex-shrink-0">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Photo #${index + 1}</span>
+                            <button onclick="removePhoto('${item.id}')" class="text-gray-400 hover:text-rose-500 text-xs p-1">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                        <input type="text" value="${item.caption || ''}" oninput="updateCaption('${item.id}', this.value)" placeholder="Add caption for slide..." class="w-full text-xs px-2 py-1 bg-rose-50/50 border border-rose-200/60 rounded-lg focus:outline-none focus:border-rose-400">
+                    </div>
+                `;
+                tray.appendChild(card);
+            });
+        }
+
+        function updateCaption(id, val) {
+            const item = photos.find(p => p.id === id);
+            if (item) {
+                item.caption = val;
+                triggerAutoSave();
+            }
+        }
+
+        function removePhoto(id) {
+            photos = photos.filter(p => p.id !== id);
+            renderPhotoTray();
+            triggerAutoSave();
+        }
+
+        function selectMusicTrack(trackId) {
+            selectedTrack = trackId;
+            document.querySelectorAll('.music-card').forEach(btn => {
+                btn.classList.remove('border-rose-500', 'bg-rose-50');
+                btn.classList.add('border-transparent', 'bg-white/60');
+            });
+            const activeBtn = document.getElementById('track_' + trackId);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-transparent', 'bg-white/60');
+                activeBtn.classList.add('border-rose-500', 'bg-rose-50');
+            }
+            triggerAutoSave();
+        }
+
+        function toggleAudio() {
+            if (isAudioPlaying) {
+                stopAudio();
+            } else {
+                startAudio();
+            }
+        }
+
+        function startAudio() {
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                isAudioPlaying = true;
+                const musicIcon = document.getElementById('musicIcon');
+                const musicText = document.getElementById('musicText');
+                if (musicIcon) musicIcon.className = "fa-solid fa-music text-rose-500 animate-bounce";
+                if (musicText) musicText.innerText = "Melody On";
+
+                playAmbientMelody();
+            } catch (err) {
+                console.warn("Audio Context setup issue:", err);
+            }
+        }
+
+        function stopAudio() {
+            isAudioPlaying = false;
+            if (audioInterval) clearInterval(audioInterval);
+            const musicIcon = document.getElementById('musicIcon');
+            const musicText = document.getElementById('musicText');
+            if (musicIcon) musicIcon.className = "fa-solid fa-music text-gray-400";
+            if (musicText) musicText.innerText = "Melody Off";
+        }
+
+        function playTone(freq, duration = 1.2, type = 'sine') {
+            if (!audioContext || !isAudioPlaying) return;
+            try {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+
+                gain.gain.setValueAtTime(0.08, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+
+                osc.start();
+                osc.stop(audioContext.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playAmbientMelody() {
+            if (audioInterval) clearInterval(audioInterval);
+
+            const pianoScale = [261.63, 329.63, 392.00, 440.00, 523.25, 659.25]; // C5 Pentatonic
+            const synthScale = [329.63, 392.00, 493.88, 587.33, 659.25, 783.99]; // E Minor Pentatonic
+            const acousticScale = [220.00, 277.18, 329.63, 440.00, 554.37];
+
+            audioInterval = setInterval(() => {
+                if (!isAudioPlaying) return;
+
+                let scale = pianoScale;
+                let toneType = 'sine';
+
+                if (selectedTrack === 'celestial_lullaby') {
+                    scale = synthScale;
+                    toneType = 'triangle';
+                } else if (selectedTrack === 'acoustic_breeze') {
+                    scale = acousticScale;
+                    toneType = 'sine';
+                }
+
+                const randomNote = scale[Math.floor(Math.random() * scale.length)];
+                playTone(randomNote, 1.5, toneType);
+
+                if (Math.random() > 0.5) {
+                    setTimeout(() => {
+                        const harmonyNote = scale[Math.floor(Math.random() * scale.length)];
+                        playTone(harmonyNote, 1.2, toneType);
+                    }, 300);
+                }
+            }, 800);
+        }
+
+        async function shareOrCopyJoygram() {
+            const shareBtn = document.getElementById('shareBtn');
+            if (shareBtn) {
+                shareBtn.disabled = true;
+                shareBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Creating Link...`;
+            }
+
+            if (window.initCloudStorage && !window.currentUserRef()) {
+                await window.initCloudStorage();
+            }
+
+            const cardId = 'joy_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+            const herName = document.getElementById('herNameInput').value.trim() || 'My Love';
+            const senderName = document.getElementById('senderNameInput').value.trim() || 'Someone Special';
+            const loveLetter = document.getElementById('loveLetterInput').value.trim() || '';
+
+            const payload = {
+                herName,
+                senderName,
+                loveLetter,
+                selectedTrack,
+                photos: photos.map(p => ({ id: p.id, url: p.url, caption: p.caption })),
+                createdAt: new Date().toISOString()
+            };
+
+            let shareableUrl = '';
+
+            const db = window.dbRef();
+            const setDocFn = window.setDocFn;
+            const docFn = window.docFn;
+            const appId = window.appIdVal;
+
+            if (db && setDocFn && window.currentUserRef()) {
+                try {
+                    const cardDocRef = docFn(db, 'artifacts', appId, 'public', 'data', 'joygrams', cardId);
+                    await setDocFn(cardDocRef, payload);
+                    shareableUrl = `${window.location.origin}${window.location.pathname}#card=${cardId}`;
+                } catch (err) {
+                    console.error("Cloud publish fallback:", err);
+                }
+            }
+
+            if (!shareableUrl) {
+                // Fallback encoding if offline
+                const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+                shareableUrl = `${window.location.origin}${window.location.pathname}#joygram-data=${encoded}`;
+            }
+
+            // Copy to clipboard safely
+            const tempInput = document.createElement('textarea');
+            tempInput.value = shareableUrl;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            if (shareBtn) {
+                shareBtn.disabled = false;
+                shareBtn.innerHTML = `<i class="fa-solid fa-share-nodes"></i> Share Story Link`;
+            }
+
+            showToast("Shareable link copied! Send it to her phone 💕");
+        }
+
+        function loadSampleData() {
+            document.getElementById('herNameInput').value = "Emma";
+            document.getElementById('senderNameInput').value = "Liam";
+            document.getElementById('loveLetterInput').value = "My dearest Emma,\n\nEvery moment with you feels like a beautiful dream come true. Here is a small reflection of our journey together. Happy Anniversary, my love!";
+
+            photos = [
+                {
+                    id: 'sample_1',
+                    url: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=800&q=80',
+                    caption: 'Our unforgettable weekend escape to the sunset beach 💕'
+                },
+                {
+                    id: 'sample_2',
+                    url: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=800&q=80',
+                    caption: 'Cozy coffee dates and endless laughter ✨'
+                },
+                {
+                    id: 'sample_3',
+                    url: 'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=800&q=80',
+                    caption: 'To a lifetime of holding hands and making beautiful memories.'
+                }
+            ];
+            renderPhotoTray();
+            triggerAutoSave();
+            showToast("Demo story loaded & saved!");
+        }
+
+        function launchJoygramPreview() {
+            const herName = document.getElementById('herNameInput').value.trim() || 'My Dearest';
+            const senderName = document.getElementById('senderNameInput').value.trim() || 'With Love';
+
+            document.getElementById('revealRecipientTitle').innerText = herName;
+            document.getElementById('senderTagline').innerText = `Sent with love by ${senderName}`;
+
+            document.getElementById('revealSection').classList.remove('hidden');
+            document.getElementById('envelopeContainer').classList.remove('hidden');
+            document.getElementById('slideStoryView').classList.add('hidden');
+
+            startAudio();
+        }
+
+        function openEnvelopeCard() {
+            document.getElementById('envelopeContainer').classList.add('hidden');
+            document.getElementById('slideStoryView').classList.remove('hidden');
+
+            currentSlideIndex = 0;
+            renderSlides();
+        }
+
+        function exitPresentationMode() {
+            document.getElementById('revealSection').classList.add('hidden');
+            stopAudio();
+        }
+
+        function renderSlides() {
+            const herName = document.getElementById('herNameInput').value.trim() || 'My Love';
+            const senderName = document.getElementById('senderNameInput').value.trim() || 'Your Love';
+            const loveLetter = document.getElementById('loveLetterInput').value.trim() || 'You mean the world to me!';
+
+            document.getElementById('slideStoryTitle').innerText = `${herName}'s Story`;
+            
+            const totalSlides = photos.length + 1;
+            document.getElementById('slideCounter').innerText = `${currentSlideIndex + 1} / ${totalSlides}`;
+
+            const letterSlide = document.getElementById('letterSlide');
+            const photoSlide = document.getElementById('photoSlide');
+
+            if (currentSlideIndex === 0) {
+                letterSlide.classList.remove('hidden');
+                photoSlide.classList.add('hidden');
+
+                document.getElementById('displayLoveLetter').innerText = loveLetter;
+                document.getElementById('displaySenderName').innerText = `Forever yours, ${senderName}`;
+            } else {
+                letterSlide.classList.add('hidden');
+                photoSlide.classList.remove('hidden');
+
+                const photoIndex = currentSlideIndex - 1;
+                const activePhoto = photos[photoIndex];
+
+                if (activePhoto) {
+                    document.getElementById('currentSlideImage').src = activePhoto.url;
+                    const captionElem = document.getElementById('currentSlideCaption');
+                    if (activePhoto.caption) {
+                        captionElem.innerText = activePhoto.caption;
+                        captionElem.classList.remove('hidden');
+                    } else {
+                        captionElem.classList.add('hidden');
+                    }
+                }
+            }
+
+            renderSlideDots(totalSlides);
+        }
+
+        function renderSlideDots(total) {
+            const container = document.getElementById('dotsContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            for (let i = 0; i < total; i++) {
+                const dot = document.createElement('button');
+                dot.className = `w-2.5 h-2.5 rounded-full transition-all ${i === currentSlideIndex ? 'bg-rose-500 w-6' : 'bg-white/40 hover:bg-white/70'}`;
+                dot.onclick = () => {
+                    currentSlideIndex = i;
+                    renderSlides();
+                };
+                container.appendChild(dot);
+            }
+        }
+
+        function prevSlide() {
+            const totalSlides = photos.length + 1;
+            if (currentSlideIndex > 0) {
+                currentSlideIndex--;
+            } else {
+                currentSlideIndex = totalSlides - 1;
+            }
+            renderSlides();
+        }
+
+        function nextSlide() {
+            const totalSlides = photos.length + 1;
+            if (currentSlideIndex < totalSlides - 1) {
+                currentSlideIndex++;
+            } else {
+                currentSlideIndex = 0;
+            }
+            renderSlides();
+        }
+
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        function setupTouchEvents() {
+            const container = document.getElementById('touchContainer');
+            if (!container) return;
+
+            container.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            container.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            }, { passive: true });
+        }
+
+        function handleSwipe() {
+            const swipeThreshold = 40;
+            if (touchEndX < touchStartX - swipeThreshold) {
+                nextSlide();
+            } else if (touchEndX > touchStartX + swipeThreshold) {
+                prevSlide();
+            }
+        }
+
+        window.onload = function() {
+            animateParticles();
+            loadSavedJoygramData();
+            setupTouchEvents();
+        };
+    </script>
+</body>
+</html>
